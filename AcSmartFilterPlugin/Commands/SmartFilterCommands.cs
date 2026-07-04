@@ -5,6 +5,7 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Runtime;
+using AcSmartFilterPlugin.Views;
 using System;
 
 [assembly: CommandClass(typeof(AcSmartFilterPlugin.Commands.SmartFilterCommands))]
@@ -13,6 +14,24 @@ namespace AcSmartFilterPlugin.Commands
 {
     public class SmartFilterCommands
     {
+        // Храним ссылку, чтобы окно не было собрано сборщиком мусора, пока открыто.
+        private static FilterView _filterView;
+
+        [CommandMethod("MyGroup", "SmartFilter", "SmartFilterLocal", CommandFlags.Modal)]
+        public void ShowSmartFilter()
+        {
+            if (_filterView == null)
+            {
+                _filterView = new FilterView();
+                _filterView.Closed += (s, e) => _filterView = null;
+                Application.ShowModelessWindow(_filterView);
+            }
+            else
+            {
+                _filterView.Activate();
+            }
+        }
+
         [CommandMethod("MyGroup", "MyCommand", "MyCommandLocal", CommandFlags.Modal)]
         public void MyCommand()
         {
