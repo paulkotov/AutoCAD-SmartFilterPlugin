@@ -68,6 +68,11 @@
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
+    <Reference Include="AdWindows, Version=5.0.1.2, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Program Files\Autodesk\Revit 2022\AdWindows.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <!--ACA References Begin-->
     <!--ACA Refences End-->
     <!--AME Referebces Begin-->
