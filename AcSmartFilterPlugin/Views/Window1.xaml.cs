@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using Autodesk.AutoCAD.DatabaseServices;
@@ -10,12 +9,10 @@ using AcApp = Autodesk.AutoCAD.ApplicationServices.Application;
 namespace AcSmartFilterPlugin.Views
 {
     /// <summary>
-    /// Элемент списка слоёв с состоянием выбора (для привязки к чекбоксу).
+    /// Элемент списка слоёв (для отображения в ListBox).
     /// </summary>
-    public class LayerItem : INotifyPropertyChanged
+    public class LayerItem
     {
-        private bool _isSelected;
-
         public LayerItem(string name, ObjectId id)
         {
             Name = name;
@@ -25,29 +22,13 @@ namespace AcSmartFilterPlugin.Views
         public string Name { get; }
 
         public ObjectId Id { get; }
-
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set
-            {
-                if (_isSelected == value)
-                {
-                    return;
-                }
-
-                _isSelected = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
-            }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
     }
 
     /// <summary>
     /// Окно фильтрации объектов чертежа по слоям.
-    /// Пользователь отмечает один или несколько слоёв — на экране остаются
-    /// только объекты отмеченных слоёв, остальные слои выключаются.
+    /// Пользователь выбирает слои в списке (или включает режим «текущий слой»)
+    /// и нажимает «Применить» — на экране остаются только объекты выбранных
+    /// слоёв, остальные слои выключаются.
     /// </summary>
     public partial class FilterView : Window
     {
@@ -60,9 +41,6 @@ namespace AcSmartFilterPlugin.Views
 
         // Текущий слой на момент открытия окна — восстанавливаем его при сбросе.
         private ObjectId _originalClayer;
-
-        // Блокирует реакцию на программное изменение чекбоксов (например, при сбросе).
-        private bool _suppressFilter;
 
         public FilterView()
         {
@@ -111,48 +89,73 @@ namespace AcSmartFilterPlugin.Views
 
             foreach (var item in items.OrderBy(i => i.Name, StringComparer.OrdinalIgnoreCase))
             {
-                item.PropertyChanged += LayerItem_PropertyChanged;
                 _layers.Add(item);
             }
         }
 
-        private void LayerItem_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void CurrentLayerCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
         {
-            if (_suppressFilter || e.PropertyName != nameof(LayerItem.IsSelected))
+            // В режиме «текущий слой» ручной выбор в списке не используется.
+            bool useCurrentLayer = CurrentLayerCheckBox.IsChecked == true;
+            LayerListBox.IsEnabled = !useCurrentLayer;
+
+            if (useCurrentLayer)
             {
+                LayerListBox.UnselectAll();
+            }
+        }
+
+        private void ConfirmButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedIds = GetSelectedLayerIds();
+
+            if (selectedIds.Count == 0)
+            {
+                MessageBox.Show(
+                    this,
+                    "Выберите хотя бы один слой или включите режим «текущий слой».",
+                    "Фильтр по слоям",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
-            ApplyFilter();
+            ApplyFilter(selectedIds);
         }
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
-            _suppressFilter = true;
-            foreach (var item in _layers)
-            {
-                item.IsSelected = false;
-            }
-            _suppressFilter = false;
-
+            LayerListBox.UnselectAll();
+            CurrentLayerCheckBox.IsChecked = false;
             RestoreOriginalState();
         }
 
         /// <summary>
-        /// Применяет фильтр: показывает только отмеченные слои, остальные выключает.
-        /// Если ничего не отмечено — восстанавливает исходное состояние.
+        /// Собирает идентификаторы слоёв, по которым нужно фильтровать:
+        /// либо текущий слой чертежа, либо выбранные в списке.
         /// </summary>
-        private void ApplyFilter()
+        private HashSet<ObjectId> GetSelectedLayerIds()
         {
-            var selectedIds = new HashSet<ObjectId>(
-                _layers.Where(l => l.IsSelected).Select(l => l.Id));
-
-            if (selectedIds.Count == 0)
+            if (CurrentLayerCheckBox.IsChecked == true)
             {
-                RestoreOriginalState();
-                return;
+                var doc = AcApp.DocumentManager.MdiActiveDocument;
+                if (doc == null)
+                {
+                    return new HashSet<ObjectId>();
+                }
+
+                return new HashSet<ObjectId> { doc.Database.Clayer };
             }
 
+            return new HashSet<ObjectId>(
+                LayerListBox.SelectedItems.Cast<LayerItem>().Select(l => l.Id));
+        }
+
+        /// <summary>
+        /// Применяет фильтр: показывает только выбранные слои, остальные выключает.
+        /// </summary>
+        private void ApplyFilter(HashSet<ObjectId> selectedIds)
+        {
             var doc = AcApp.DocumentManager.MdiActiveDocument;
             if (doc == null)
             {
@@ -165,7 +168,7 @@ namespace AcSmartFilterPlugin.Views
             using (var tr = db.TransactionManager.StartTransaction())
             {
                 // Если текущий слой будет выключен, AutoCAD выдаёт предупреждение.
-                // Переназначаем текущий слой на один из отмеченных, чтобы этого избежать.
+                // Переназначаем текущий слой на один из выбранных, чтобы этого избежать.
                 if (!selectedIds.Contains(db.Clayer))
                 {
                     db.Clayer = selectedIds.First();
