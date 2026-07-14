@@ -22,11 +22,19 @@
                 BorderThickness="1">
             <ListBox x:Name="LayerListBox"
                      MinHeight="100"
+                     ItemsSource="{Binding Layers}"
+                     IsEnabled="{Binding IsLayerListEnabled}"
                      DisplayMemberPath="Name"
                      SelectionMode="Extended"
                      BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+            </ListBox>
         </Border>
 
         <GroupBox Grid.Row="2"
@@ -35,8 +43,7 @@
                   Padding="6">
             <CheckBox x:Name="CurrentLayerCheckBox"
                       Content="Фильтровать по текущему слою"
-                      Checked="CurrentLayerCheckBox_CheckedChanged"
-                      Unchecked="CurrentLayerCheckBox_CheckedChanged"/>
+                      IsChecked="{Binding UseCurrentLayer, Mode=TwoWay}"/>
         </GroupBox>
 
         <StackPanel Grid.Row="3"
@@ -47,12 +54,12 @@
                     Content="Сбросить"
                     Padding="12,6"
                     Margin="0,0,8,0"
-                    Click="ResetButton_Click"/>
+                    Command="{Binding ResetCommand}"/>
             <Button x:Name="ConfirmButton"
                     Content="Применить"
                     Padding="12,6"
                     IsDefault="True"
-                    Click="ConfirmButton_Click"/>
+                    Command="{Binding ApplyCommand}"/>
         </StackPanel>
     </Grid>
 </Window>

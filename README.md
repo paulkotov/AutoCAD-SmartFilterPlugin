@@ -44,10 +44,11 @@ AcSmartFilterPlugin/
 ├── AcSmartFilterPlugin.sln          # Solution file
 ├── AcSmartFilterPlugin/
 │   ├── AcSmartFilterPlugin.cs       # Plugin entry point (IExtensionApplication)
-│   ├── myCommands.cs                # AutoCAD commands
+│   ├── Commands/
+│   │   └── SmartFilterCommands.cs   # AutoCAD commands
 │   └── Views/
-│       ├── Window1.xaml             # Filter dialog UI (FilterView)
-│       └── Window1.xaml.cs
+│       ├── FilterView.xaml          # Filter dialog UI (FilterView)
+│       └── FilterView.xaml.cs
 └── README.md
 ```
 

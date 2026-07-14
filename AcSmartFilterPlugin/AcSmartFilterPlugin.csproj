@@ -93,9 +93,16 @@
     </Compile>
     <Compile Include="AcSmartFilterPlugin.cs" />
     <Compile Include="Commands\SmartFilterCommands.cs" />
+    <Compile Include="Models\LayerInfo.cs" />
+    <Compile Include="Models\LayerSnapshot.cs" />
+    <Compile Include="Mvvm\RelayCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Views\Window1.xaml.cs">
-      <DependentUpon>Window1.xaml</DependentUpon>
+    <Compile Include="Services\ILayerFilterService.cs" />
+    <Compile Include="Services\LayerFilterService.cs" />
+    <Compile Include="ViewModels\FilterViewModel.cs" />
+    <Compile Include="ViewModels\LayerListItem.cs" />
+    <Compile Include="Views\FilterView.xaml.cs">
+      <DependentUpon>FilterView.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -127,7 +134,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="Views\Window1.xaml">
+    <Page Include="Views\FilterView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
