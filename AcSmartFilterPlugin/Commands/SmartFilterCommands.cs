@@ -1,5 +1,3 @@
-// (C) Copyright 2026 by HP 
-//
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
@@ -62,16 +60,5 @@ namespace AcSmartFilterPlugin.Commands
             }
         }
 
-        [CommandMethod("MyGroup", "MySessionCmd", "MySessionCmdLocal", CommandFlags.Modal | CommandFlags.Session)]
-        public void MySessionCmd()
-        {
-            // Put your command code here
-        }
-
-        //[LispFunction("MyLispFunction", "MyLispFunctionLocal")]
-        //public int MyLispFunction(ResultBuffer args)
-        //{
-        //    return 1;
-        //}
     }
 }
