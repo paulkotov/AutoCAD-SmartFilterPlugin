@@ -21,6 +21,7 @@ namespace AcSmartFilterPlugin.Views
 
             Loaded += (s, e) => _viewModel.Initialize();
             Closed += (s, e) => _viewModel.RestoreOriginalState();
+            _viewModel.CloseRequested += (s, e) => Close();
         }
     }
 }
