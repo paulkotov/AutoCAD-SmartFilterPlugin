@@ -19,23 +19,31 @@ namespace AcSmartFilterPlugin.ViewModels
     public sealed class FilterViewModel : INotifyPropertyChanged
     {
         private readonly ILayerFilterService _layerService;
+        private readonly IFilterConfigStore _configStore;
         private LayerSnapshot _originalSnapshot;
         private bool _useCurrentLayer;
 
-        public FilterViewModel(ILayerFilterService layerService)
+        public FilterViewModel(ILayerFilterService layerService, IFilterConfigStore configStore)
         {
             _layerService = layerService ?? throw new ArgumentNullException(nameof(layerService));
+            _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));
 
             Layers = new ObservableCollection<LayerListItem>();
             ApplyCommand = new RelayCommand(ApplyFilter, CanApplyFilter);
             ResetCommand = new RelayCommand(Reset);
+            CancelCommand = new RelayCommand(Cancel);
         }
+
+        /// <summary>Запрос на закрытие окна. Обрабатывается представлением.</summary>
+        public event EventHandler CloseRequested;
 
         public ObservableCollection<LayerListItem> Layers { get; }
 
         public ICommand ApplyCommand { get; }
 
         public ICommand ResetCommand { get; }
+
+        public ICommand CancelCommand { get; }
 
         /// <summary>Режим «фильтровать по текущему слою».</summary>
         public bool UseCurrentLayer
@@ -87,6 +95,33 @@ namespace AcSmartFilterPlugin.ViewModels
                 item.PropertyChanged += OnLayerItemChanged;
                 Layers.Add(item);
             }
+
+            RestoreSavedConfig();
+        }
+
+        /// <summary>
+        /// Читает сохранённую в чертеже конфигурацию фильтра и восстанавливает
+        /// выбор слоёв (или режим «текущий слой») при открытии окна.
+        /// </summary>
+        private void RestoreSavedConfig()
+        {
+            var config = _configStore.Load();
+            if (config == null)
+            {
+                return;
+            }
+
+            if (config.UseCurrentLayer)
+            {
+                UseCurrentLayer = true;
+                return;
+            }
+
+            var savedNames = new HashSet<string>(config.LayerNames, StringComparer.OrdinalIgnoreCase);
+            foreach (var item in Layers)
+            {
+                item.IsSelected = savedNames.Contains(item.Name);
+            }
         }
 
         /// <summary>Восстанавливает исходное состояние слоёв. Вызывается при закрытии окна.</summary>
@@ -110,13 +145,37 @@ namespace AcSmartFilterPlugin.ViewModels
             }
 
             _layerService.ApplyFilter(selectedIds);
+            SaveCurrentConfig();
         }
 
+        /// <summary>Сохраняет текущую конфигурацию фильтра внутрь чертежа.</summary>
+        private void SaveCurrentConfig()
+        {
+            var selectedNames = _useCurrentLayer
+                ? Array.Empty<string>()
+                : Layers.Where(l => l.IsSelected).Select(l => l.Name).ToArray();
+
+            _configStore.Save(new FilterConfig(selectedNames, _useCurrentLayer));
+        }
+
+        /// <summary>
+        /// Сбрасывает весь выбор: снимает выделение слоёв, выключает режим
+        /// «текущий слой» и возвращает видимость слоёв к состоянию на момент открытия окна.
+        /// </summary>
         private void Reset()
         {
-            ClearSelection();
             UseCurrentLayer = false;
+            ClearSelection();
             RestoreOriginalState();
+        }
+
+        /// <summary>
+        /// Закрывает окно без применения фильтра. Откат видимости слоёв выполняет
+        /// представление при закрытии через <see cref="RestoreOriginalState"/>.
+        /// </summary>
+        private void Cancel()
+        {
+            CloseRequested?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>

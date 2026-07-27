@@ -93,11 +93,14 @@
     </Compile>
     <Compile Include="AcSmartFilterPlugin.cs" />
     <Compile Include="Commands\SmartFilterCommands.cs" />
+    <Compile Include="Models\FilterConfig.cs" />
     <Compile Include="Models\LayerInfo.cs" />
     <Compile Include="Models\LayerSnapshot.cs" />
     <Compile Include="Mvvm\RelayCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\IFilterConfigStore.cs" />
     <Compile Include="Services\ILayerFilterService.cs" />
+    <Compile Include="Services\FilterConfigStore.cs" />
     <Compile Include="Services\LayerFilterService.cs" />
     <Compile Include="ViewModels\FilterViewModel.cs" />
     <Compile Include="ViewModels\LayerListItem.cs" />

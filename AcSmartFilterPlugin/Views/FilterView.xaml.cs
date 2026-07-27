@@ -16,11 +16,12 @@ namespace AcSmartFilterPlugin.Views
         {
             InitializeComponent();
 
-            _viewModel = new FilterViewModel(new LayerFilterService());
+            _viewModel = new FilterViewModel(new LayerFilterService(), new FilterConfigStore());
             DataContext = _viewModel;
 
             Loaded += (s, e) => _viewModel.Initialize();
             Closed += (s, e) => _viewModel.RestoreOriginalState();
+            _viewModel.CloseRequested += (s, e) => Close();
         }
     }
 }
