@@ -86,33 +86,25 @@
     <Reference Include="System.Xaml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Resources\CommandStrings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>CommandStrings.resx</DependentUpon>
-    </Compile>
     <Compile Include="AcSmartFilterPlugin.cs" />
     <Compile Include="Commands\SmartFilterCommands.cs" />
     <Compile Include="Models\FilterConfig.cs" />
     <Compile Include="Models\LayerInfo.cs" />
     <Compile Include="Models\LayerSnapshot.cs" />
+    <Compile Include="Models\PickedObjectInfo.cs" />
     <Compile Include="Mvvm\RelayCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\IFilterConfigStore.cs" />
     <Compile Include="Services\ILayerFilterService.cs" />
+    <Compile Include="Services\IPickObjectService.cs" />
     <Compile Include="Services\FilterConfigStore.cs" />
     <Compile Include="Services\LayerFilterService.cs" />
+    <Compile Include="Services\PickObjectService.cs" />
     <Compile Include="ViewModels\FilterViewModel.cs" />
     <Compile Include="ViewModels\LayerListItem.cs" />
     <Compile Include="Views\FilterView.xaml.cs">
       <DependentUpon>FilterView.xaml</DependentUpon>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\CommandStrings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>CommandStrings.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">
