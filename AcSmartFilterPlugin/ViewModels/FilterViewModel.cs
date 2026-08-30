@@ -19,23 +19,34 @@ namespace AcSmartFilterPlugin.ViewModels
     public sealed class FilterViewModel : INotifyPropertyChanged
     {
         private readonly ILayerFilterService _layerService;
+        private readonly IPickObjectService _pickService;
         private readonly IFilterConfigStore _configStore;
         private LayerSnapshot _originalSnapshot;
+        private PickedObjectInfo _pickedObject;
         private bool _useCurrentLayer;
+        private bool _isPicking;
 
-        public FilterViewModel(ILayerFilterService layerService, IFilterConfigStore configStore)
+        public FilterViewModel(
+            ILayerFilterService layerService,
+            IPickObjectService pickService,
+            IFilterConfigStore configStore)
         {
             _layerService = layerService ?? throw new ArgumentNullException(nameof(layerService));
+            _pickService = pickService ?? throw new ArgumentNullException(nameof(pickService));
             _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));
 
             Layers = new ObservableCollection<LayerListItem>();
             ApplyCommand = new RelayCommand(ApplyFilter, CanApplyFilter);
             ResetCommand = new RelayCommand(Reset);
             CancelCommand = new RelayCommand(Cancel);
+            PickObjectCommand = new RelayCommand(PickObject, CanPickObject);
         }
 
         /// <summary>Запрос на закрытие окна. Обрабатывается представлением.</summary>
         public event EventHandler CloseRequested;
+
+        /// <summary>Запрос вернуть фокус окну после работы в чертеже.</summary>
+        public event EventHandler ActivationRequested;
 
         public ObservableCollection<LayerListItem> Layers { get; }
 
@@ -44,6 +55,25 @@ namespace AcSmartFilterPlugin.ViewModels
         public ICommand ResetCommand { get; }
 
         public ICommand CancelCommand { get; }
+
+        public ICommand PickObjectCommand { get; }
+
+        /// <summary>Последний указанный в чертеже объект (или <c>null</c>).</summary>
+        public PickedObjectInfo PickedObject
+        {
+            get => _pickedObject;
+            private set
+            {
+                _pickedObject = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PickedObjectDescription));
+            }
+        }
+
+        /// <summary>Сведения об указанном объекте для отображения в окне.</summary>
+        public string PickedObjectDescription => _pickedObject == null
+            ? "Объект не указан"
+            : $"Тип: {_pickedObject.ObjectType}\nСлой: {_pickedObject.LayerName}\nХэндл: {_pickedObject.Handle}";
 
         /// <summary>Режим «фильтровать по текущему слою».</summary>
         public bool UseCurrentLayer
@@ -73,6 +103,23 @@ namespace AcSmartFilterPlugin.ViewModels
         /// <summary>Список слоёв доступен, только если не включён режим «текущий слой».</summary>
         public bool IsLayerListEnabled => !_useCurrentLayer;
 
+        /// <summary>Идёт выбор объектов в чертеже — повторный запрос недопустим.</summary>
+        public bool IsPicking
+        {
+            get => _isPicking;
+            private set
+            {
+                if (_isPicking == value)
+                {
+                    return;
+                }
+
+                _isPicking = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
         /// <summary>Загружает слои активного чертежа. Вызывается при открытии окна.</summary>
         public void Initialize()
         {
@@ -97,6 +144,9 @@ namespace AcSmartFilterPlugin.ViewModels
             }
 
             RestoreSavedConfig();
+
+            // Список слоёв заполнен — команды, зависящие от него, могли стать доступны.
+            CommandManager.InvalidateRequerySuggested();
         }
 
         /// <summary>
@@ -159,13 +209,15 @@ namespace AcSmartFilterPlugin.ViewModels
         }
 
         /// <summary>
-        /// Сбрасывает весь выбор: снимает выделение слоёв, выключает режим
-        /// «текущий слой» и возвращает видимость слоёв к состоянию на момент открытия окна.
+        /// Сбрасывает весь выбор: снимает выделение слоёв, выключает режим «текущий слой»,
+        /// забывает указанный объект и возвращает видимость слоёв к состоянию на момент
+        /// открытия окна.
         /// </summary>
         private void Reset()
         {
             UseCurrentLayer = false;
             ClearSelection();
+            PickedObject = null;
             RestoreOriginalState();
         }
 
@@ -176,6 +228,58 @@ namespace AcSmartFilterPlugin.ViewModels
         private void Cancel()
         {
             CloseRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        private bool CanPickObject()
+            => !_useCurrentLayer && !_isPicking && Layers.Count > 0;
+
+        /// <summary>
+        /// Просит указать объект в чертеже, показывает его сведения
+        /// и отмечает в списке его слой вместо текущего выбора.
+        /// </summary>
+        private async void PickObject()
+        {
+            if (_isPicking)
+            {
+                return;
+            }
+
+            IsPicking = true;
+            try
+            {
+                var pickedObject = await _pickService.PickObjectAsync();
+                if (pickedObject != null)
+                {
+                    PickedObject = pickedObject;
+                    SelectLayer(pickedObject.LayerId);
+                }
+            }
+            catch (Exception)
+            {
+                // async void: непойманное исключение завершило бы процесс AutoCAD.
+            }
+            finally
+            {
+                IsPicking = false;
+                ActivationRequested?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Отмечает указанный слой и снимает выбор с остальных. Если слоя нет в списке
+        /// (например, он создан после открытия окна), текущий выбор не меняется.
+        /// </summary>
+        private void SelectLayer(ObjectId layerId)
+        {
+            if (!Layers.Any(l => l.Id == layerId))
+            {
+                return;
+            }
+
+            foreach (var item in Layers)
+            {
+                item.IsSelected = item.Id == layerId;
+            }
         }
 
         /// <summary>

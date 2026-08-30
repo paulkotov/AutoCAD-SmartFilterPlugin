@@ -1,8 +1,8 @@
 ﻿<Window x:Class="AcSmartFilterPlugin.Views.FilterView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Выбор данных" Height="400" Width="360"
-        MinHeight="320" MinWidth="260">
+        Title="Выбор данных" Height="520" Width="360"
+        MinHeight="440" MinWidth="260">
     <Window.InputBindings>
         <KeyBinding Key="Escape" Command="{Binding CancelCommand}"/>
     </Window.InputBindings>
@@ -11,6 +11,8 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -42,7 +44,25 @@
             </ListBox>
         </Border>
 
-        <GroupBox Grid.Row="2"
+        <Button Grid.Row="2"
+                x:Name="PickObjectButton"
+                Content="Указать объект"
+                Padding="12,6"
+                HorizontalAlignment="Left"
+                Margin="0,8,0,0"
+                Command="{Binding PickObjectCommand}"
+                ToolTip="Укажите объект в чертеже — его слой будет отмечен в списке"/>
+
+        <GroupBox Grid.Row="3"
+                  Header="Указанный объект"
+                  Margin="0,10,0,0"
+                  Padding="6">
+            <TextBlock x:Name="PickedObjectDescriptionText"
+                       Text="{Binding PickedObjectDescription}"
+                       TextWrapping="Wrap"/>
+        </GroupBox>
+
+        <GroupBox Grid.Row="4"
                   Header="Текущий слой"
                   Margin="0,10,0,0"
                   Padding="6">
@@ -51,7 +71,7 @@
                       IsChecked="{Binding UseCurrentLayer, Mode=TwoWay}"/>
         </GroupBox>
 
-        <Button Grid.Row="3"
+        <Button Grid.Row="5"
                 x:Name="ResetButton"
                 Content="Сбросить"
                 Padding="12,6"
@@ -60,7 +80,7 @@
                 Margin="0,12,0,0"
                 Command="{Binding ResetCommand}"/>
 
-        <StackPanel Grid.Row="4"
+        <StackPanel Grid.Row="6"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Margin="0,8,0,0">
