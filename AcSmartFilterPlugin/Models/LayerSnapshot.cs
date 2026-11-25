@@ -9,14 +9,15 @@ namespace AcSmartFilterPlugin.Models
     /// </summary>
     public sealed class LayerSnapshot
     {
+        public IReadOnlyList<LayerInfo> Layers { get; }
+
+        public ObjectId CurrentLayerId { get; }
+
         public LayerSnapshot(IReadOnlyList<LayerInfo> layers, ObjectId currentLayerId)
         {
             Layers = layers;
             CurrentLayerId = currentLayerId;
         }
 
-        public IReadOnlyList<LayerInfo> Layers { get; }
-
-        public ObjectId CurrentLayerId { get; }
     }
 }

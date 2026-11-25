@@ -1,5 +1,3 @@
-// (C) Copyright 2026 by HP 
-//
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
@@ -17,7 +15,7 @@ namespace AcSmartFilterPlugin.Commands
         // Храним ссылку, чтобы окно не было собрано сборщиком мусора, пока открыто.
         private static FilterView _filterView;
 
-        [CommandMethod("MyGroup", "SmartFilter", "SmartFilterLocal", CommandFlags.Modal)]
+        [CommandMethod("MyGroup", "SmartFilter", CommandFlags.Modal)]
         public void ShowSmartFilter()
         {
             if (_filterView == null)
@@ -32,7 +30,7 @@ namespace AcSmartFilterPlugin.Commands
             }
         }
 
-        [CommandMethod("MyGroup", "MyCommand", "MyCommandLocal", CommandFlags.Modal)]
+        [CommandMethod("MyGroup", "MyCommand", CommandFlags.Modal)]
         public void MyCommand()
         {
             Document doc = Application.DocumentManager.MdiActiveDocument;
@@ -45,7 +43,7 @@ namespace AcSmartFilterPlugin.Commands
             }
         }
 
-        [CommandMethod("MyGroup", "MyPickFirst", "MyPickFirstLocal", CommandFlags.Modal | CommandFlags.UsePickSet)]
+        [CommandMethod("MyGroup", "MyPickFirst", CommandFlags.Modal | CommandFlags.UsePickSet)]
         public void MyPickFirst()
         {
             var ed = Application.DocumentManager.MdiActiveDocument.Editor;
@@ -62,16 +60,5 @@ namespace AcSmartFilterPlugin.Commands
             }
         }
 
-        [CommandMethod("MyGroup", "MySessionCmd", "MySessionCmdLocal", CommandFlags.Modal | CommandFlags.Session)]
-        public void MySessionCmd()
-        {
-            // Put your command code here
-        }
-
-        //[LispFunction("MyLispFunction", "MyLispFunctionLocal")]
-        //public int MyLispFunction(ResultBuffer args)
-        //{
-        //    return 1;
-        //}
     }
 }

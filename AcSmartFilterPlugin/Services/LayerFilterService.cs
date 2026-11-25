@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.AutoCAD.DatabaseServices;
 using AcSmartFilterPlugin.Models;
+
 using AcApp = Autodesk.AutoCAD.ApplicationServices.Application;
 
 namespace AcSmartFilterPlugin.Services
