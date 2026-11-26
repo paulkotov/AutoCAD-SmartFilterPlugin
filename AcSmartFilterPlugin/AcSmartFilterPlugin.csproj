@@ -88,12 +88,18 @@
   <ItemGroup>
     <Compile Include="AcSmartFilterPlugin.cs" />
     <Compile Include="Commands\SmartFilterCommands.cs" />
+    <Compile Include="Models\EntityVisibilitySnapshot.cs" />
     <Compile Include="Models\FilterConfig.cs" />
     <Compile Include="Models\LayerInfo.cs" />
     <Compile Include="Models\LayerSnapshot.cs" />
+    <Compile Include="Models\ObjectColor.cs" />
+    <Compile Include="Models\ObjectColorSource.cs" />
     <Compile Include="Models\PickedObjectInfo.cs" />
     <Compile Include="Mvvm\RelayCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\EntityProperties.cs" />
+    <Compile Include="Services\EntityVisibilityFilter.cs" />
+    <Compile Include="Services\IEntityVisibilityFilter.cs" />
     <Compile Include="Services\IFilterConfigStore.cs" />
     <Compile Include="Services\ILayerFilterService.cs" />
     <Compile Include="Services\IPickObjectService.cs" />

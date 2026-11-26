@@ -1,9 +1,10 @@
+using System;
 using Autodesk.AutoCAD.DatabaseServices;
 
 namespace AcSmartFilterPlugin.Models
 {
     /// <summary>
-    /// Сведения об указанном в чертеже объекте: идентификация, тип и слой.
+    /// Сведения об указанном в чертеже объекте: идентификация, тип, цвет и слой.
     /// </summary>
     public sealed class PickedObjectInfo
     {
@@ -11,12 +12,14 @@ namespace AcSmartFilterPlugin.Models
             ObjectId id,
             Handle handle,
             string objectType,
+            ObjectColor color,
             ObjectId layerId,
             string layerName)
         {
             Id = id;
             Handle = handle;
             ObjectType = objectType;
+            Color = color ?? throw new ArgumentNullException(nameof(color));
             LayerId = layerId;
             LayerName = layerName;
         }
@@ -28,6 +31,9 @@ namespace AcSmartFilterPlugin.Models
 
         /// <summary>Тип объекта: DXF-имя (например, LWPOLYLINE) или имя .NET-класса.</summary>
         public string ObjectType { get; }
+
+        /// <summary>Назначение цвета указанного объекта.</summary>
+        public ObjectColor Color { get; }
 
         public ObjectId LayerId { get; }
 

@@ -13,26 +13,32 @@ using AcSmartFilterPlugin.Services;
 namespace AcSmartFilterPlugin.ViewModels
 {
     /// <summary>
-    /// ViewModel окна фильтрации по слоям. Содержит состояние выбора и команды,
-    /// а всю работу с чертежом делегирует <see cref="ILayerFilterService"/>.
+    /// ViewModel окна фильтрации. Содержит состояние выбора и команды,
+    /// а работу с чертежом делегирует сервисам слоёв и видимости объектов.
     /// </summary>
     public sealed class FilterViewModel : INotifyPropertyChanged
     {
         private readonly ILayerFilterService _layerService;
         private readonly IPickObjectService _pickService;
+        private readonly IEntityVisibilityFilter _entityFilter;
         private readonly IFilterConfigStore _configStore;
         private LayerSnapshot _originalSnapshot;
+        private EntityVisibilitySnapshot _hiddenEntities;
         private PickedObjectInfo _pickedObject;
         private bool _useCurrentLayer;
+        private bool _filterByObjectType;
+        private bool _filterByObjectColor;
         private bool _isPicking;
 
         public FilterViewModel(
             ILayerFilterService layerService,
             IPickObjectService pickService,
+            IEntityVisibilityFilter entityFilter,
             IFilterConfigStore configStore)
         {
             _layerService = layerService ?? throw new ArgumentNullException(nameof(layerService));
             _pickService = pickService ?? throw new ArgumentNullException(nameof(pickService));
+            _entityFilter = entityFilter ?? throw new ArgumentNullException(nameof(entityFilter));
             _configStore = configStore ?? throw new ArgumentNullException(nameof(configStore));
 
             Layers = new ObservableCollection<LayerListItem>();
@@ -67,13 +73,75 @@ namespace AcSmartFilterPlugin.ViewModels
                 _pickedObject = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(PickedObjectDescription));
+                OnPropertyChanged(nameof(HasPickedObject));
+                OnPropertyChanged(nameof(FilterByTypeCaption));
+                OnPropertyChanged(nameof(FilterByColorCaption));
+
+                // Новый образец включает оба критерия; сброс объекта их выключает.
+                FilterByObjectType = value != null;
+                FilterByObjectColor = value != null;
             }
         }
+
+        /// <summary>В чертеже указан объект, с которого можно взять тип и цвет.</summary>
+        public bool HasPickedObject => _pickedObject != null;
 
         /// <summary>Сведения об указанном объекте для отображения в окне.</summary>
         public string PickedObjectDescription => _pickedObject == null
             ? "Объект не указан"
-            : $"Тип: {_pickedObject.ObjectType}\nСлой: {_pickedObject.LayerName}\nХэндл: {_pickedObject.Handle}";
+            : $"Тип: {_pickedObject.ObjectType}\nЦвет: {_pickedObject.Color.DisplayName}\nСлой: {_pickedObject.LayerName}\nХэндл: {_pickedObject.Handle}";
+
+        /// <summary>Подпись критерия типа с DXF-именем указанного объекта.</summary>
+        public string FilterByTypeCaption => _pickedObject == null
+            ? "Фильтровать по типу"
+            : $"Фильтровать по типу ({_pickedObject.ObjectType})";
+
+        /// <summary>Подпись критерия цвета с назначением цвета указанного объекта.</summary>
+        public string FilterByColorCaption => _pickedObject == null
+            ? "Фильтровать по цвету"
+            : $"Фильтровать по цвету ({_pickedObject.Color.DisplayName})";
+
+        /// <summary>Скрывать объекты другого типа, чем у указанного.</summary>
+        public bool FilterByObjectType
+        {
+            get => _filterByObjectType;
+            set
+            {
+                if (value && _pickedObject == null)
+                {
+                    return;
+                }
+
+                if (_filterByObjectType == value)
+                {
+                    return;
+                }
+
+                _filterByObjectType = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>Скрывать объекты с другим назначением цвета, чем у указанного.</summary>
+        public bool FilterByObjectColor
+        {
+            get => _filterByObjectColor;
+            set
+            {
+                if (value && _pickedObject == null)
+                {
+                    return;
+                }
+
+                if (_filterByObjectColor == value)
+                {
+                    return;
+                }
+
+                _filterByObjectColor = value;
+                OnPropertyChanged();
+            }
+        }
 
         /// <summary>Режим «фильтровать по текущему слою».</summary>
         public bool UseCurrentLayer
@@ -174,9 +242,14 @@ namespace AcSmartFilterPlugin.ViewModels
             }
         }
 
-        /// <summary>Восстанавливает исходное состояние слоёв. Вызывается при закрытии окна.</summary>
+        /// <summary>
+        /// Восстанавливает видимость объектов и исходное состояние слоёв.
+        /// Вызывается при сбросе и при закрытии окна.
+        /// </summary>
         public void RestoreOriginalState()
         {
+            RestoreEntityFilter();
+
             if (_originalSnapshot != null)
             {
                 _layerService.RestoreState(_originalSnapshot);
@@ -194,8 +267,66 @@ namespace AcSmartFilterPlugin.ViewModels
                 return;
             }
 
+            // Предыдущее скрытие снимаем до нового прохода, иначе совпавшие
+            // с новыми критериями объекты так и останутся невидимыми.
+            RestoreEntityFilter();
             _layerService.ApplyFilter(selectedIds);
+            ApplyEntityFilter();
             SaveCurrentConfig();
+        }
+
+        /// <summary>
+        /// Скрывает объекты, которые не совпали с включёнными критериями
+        /// типа и цвета указанного объекта.
+        /// </summary>
+        private void ApplyEntityFilter()
+        {
+            if (_pickedObject == null || (!_filterByObjectType && !_filterByObjectColor))
+            {
+                return;
+            }
+
+            var objectType = _filterByObjectType ? _pickedObject.ObjectType : null;
+            var color = _filterByObjectColor ? _pickedObject.Color : null;
+            var hidden = _entityFilter.HideNonMatching(objectType, color);
+
+            // Объекты, которые не удалось показать на прошлом шаге, остаются в снимке:
+            // новый проход их пропускает, потому что они уже невидимы.
+            _hiddenEntities = MergeSnapshots(_hiddenEntities, hidden);
+        }
+
+        private static EntityVisibilitySnapshot MergeSnapshots(
+            EntityVisibilitySnapshot existing,
+            EntityVisibilitySnapshot added)
+        {
+            var hasExisting = existing != null && existing.HiddenEntityIds.Count > 0;
+            var hasAdded = added != null && added.HiddenEntityIds.Count > 0;
+            if (!hasExisting)
+            {
+                return added;
+            }
+
+            if (!hasAdded)
+            {
+                return existing;
+            }
+
+            return new EntityVisibilitySnapshot(existing.HiddenEntityIds.Concat(added.HiddenEntityIds).Distinct());
+        }
+
+        private void RestoreEntityFilter()
+        {
+            if (_hiddenEntities == null || _hiddenEntities.HiddenEntityIds.Count == 0)
+            {
+                _hiddenEntities = null;
+                return;
+            }
+
+            _hiddenEntities = _entityFilter.Restore(_hiddenEntities);
+            if (_hiddenEntities.HiddenEntityIds.Count == 0)
+            {
+                _hiddenEntities = null;
+            }
         }
 
         /// <summary>Сохраняет текущую конфигурацию фильтра внутрь чертежа.</summary>
@@ -210,8 +341,8 @@ namespace AcSmartFilterPlugin.ViewModels
 
         /// <summary>
         /// Сбрасывает весь выбор: снимает выделение слоёв, выключает режим «текущий слой»,
-        /// забывает указанный объект и возвращает видимость слоёв к состоянию на момент
-        /// открытия окна.
+        /// забывает указанный объект и возвращает видимость слоёв и объектов к состоянию
+        /// на момент открытия окна.
         /// </summary>
         private void Reset()
         {
@@ -222,7 +353,7 @@ namespace AcSmartFilterPlugin.ViewModels
         }
 
         /// <summary>
-        /// Закрывает окно без применения фильтра. Откат видимости слоёв выполняет
+        /// Закрывает окно без сохранения фильтра. Откат видимости выполняет
         /// представление при закрытии через <see cref="RestoreOriginalState"/>.
         /// </summary>
         private void Cancel()
@@ -234,8 +365,9 @@ namespace AcSmartFilterPlugin.ViewModels
             => !_useCurrentLayer && !_isPicking && Layers.Count > 0;
 
         /// <summary>
-        /// Просит указать объект в чертеже, показывает его сведения
+        /// Просит указать объект в чертеже, показывает его тип, цвет и слой
         /// и отмечает в списке его слой вместо текущего выбора.
+        /// Тип и цвет становятся критериями фильтра до нажатия «Применить».
         /// </summary>
         private async void PickObject()
         {

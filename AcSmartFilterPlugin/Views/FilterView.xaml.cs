@@ -5,8 +5,8 @@ using AcSmartFilterPlugin.ViewModels;
 namespace AcSmartFilterPlugin.Views
 {
     /// <summary>
-    /// Окно фильтрации объектов чертежа по слоям. Логики в code-behind нет —
-    /// всё состояние и поведение вынесены в <see cref="FilterViewModel"/>.
+    /// Окно фильтрации объектов чертежа по слоям, типу и цвету.
+    /// Логики в code-behind нет — состояние и поведение вынесены в <see cref="FilterViewModel"/>.
     /// </summary>
     public partial class FilterView : Window
     {
@@ -19,6 +19,7 @@ namespace AcSmartFilterPlugin.Views
             _viewModel = new FilterViewModel(
                 new LayerFilterService(),
                 new PickObjectService(),
+                new EntityVisibilityFilter(),
                 new FilterConfigStore());
             DataContext = _viewModel;
 

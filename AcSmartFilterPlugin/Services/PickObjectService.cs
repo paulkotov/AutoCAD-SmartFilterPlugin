@@ -69,20 +69,14 @@ namespace AcSmartFilterPlugin.Services
                 var pickedObject = new PickedObjectInfo(
                     entity.ObjectId,
                     entity.Handle,
-                    GetObjectType(entity),
+                    EntityProperties.GetObjectType(entity),
+                    EntityProperties.GetColor(entity),
                     entity.LayerId,
                     layer.Name);
 
                 tr.Commit();
                 return pickedObject;
             }
-        }
-
-        /// <summary>DXF-имя объекта; для типов без него — имя .NET-класса.</summary>
-        private static string GetObjectType(Entity entity)
-        {
-            var dxfName = entity.GetRXClass().DxfName;
-            return string.IsNullOrEmpty(dxfName) ? entity.GetType().Name : dxfName;
         }
     }
 }
