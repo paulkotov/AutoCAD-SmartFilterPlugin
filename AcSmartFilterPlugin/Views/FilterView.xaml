@@ -1,8 +1,8 @@
 ﻿<Window x:Class="AcSmartFilterPlugin.Views.FilterView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Выбор данных" Height="520" Width="360"
-        MinHeight="440" MinWidth="260">
+        Title="Выбор данных" Height="600" Width="400"
+        MinHeight="520" MinWidth="300">
     <Window.InputBindings>
         <KeyBinding Key="Escape" Command="{Binding CancelCommand}"/>
     </Window.InputBindings>
@@ -51,15 +51,31 @@
                 HorizontalAlignment="Left"
                 Margin="0,8,0,0"
                 Command="{Binding PickObjectCommand}"
-                ToolTip="Укажите объект в чертеже — его слой будет отмечен в списке"/>
+                ToolTip="Укажите объект в чертеже — его слой будет отмечен, а тип и цвет станут критериями фильтра"/>
 
         <GroupBox Grid.Row="3"
                   Header="Указанный объект"
                   Margin="0,10,0,0"
                   Padding="6">
-            <TextBlock x:Name="PickedObjectDescriptionText"
-                       Text="{Binding PickedObjectDescription}"
-                       TextWrapping="Wrap"/>
+            <StackPanel>
+                <TextBlock x:Name="PickedObjectDescriptionText"
+                           Text="{Binding PickedObjectDescription}"
+                           TextWrapping="Wrap"/>
+                <CheckBox x:Name="FilterByTypeCheckBox"
+                          IsChecked="{Binding FilterByObjectType, Mode=TwoWay}"
+                          IsEnabled="{Binding HasPickedObject}"
+                          Margin="0,8,0,0"
+                          ToolTip="При применении скрыть объекты другого типа в пространстве модели и на текущем листе">
+                    <TextBlock Text="{Binding FilterByTypeCaption}" TextWrapping="Wrap"/>
+                </CheckBox>
+                <CheckBox x:Name="FilterByColorCheckBox"
+                          IsChecked="{Binding FilterByObjectColor, Mode=TwoWay}"
+                          IsEnabled="{Binding HasPickedObject}"
+                          Margin="0,4,0,0"
+                          ToolTip="При применении скрыть объекты с другим назначением цвета. «По слою» и «По блоку» сравниваются как есть, без подстановки цвета слоя">
+                    <TextBlock Text="{Binding FilterByColorCaption}" TextWrapping="Wrap"/>
+                </CheckBox>
+            </StackPanel>
         </GroupBox>
 
         <GroupBox Grid.Row="4"
